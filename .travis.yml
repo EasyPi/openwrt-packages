@@ -1,0 +1,53 @@
+sudo: required
+
+language: generic
+
+addons:
+  apt:
+    packages:
+      - build-essential
+      - flex
+      - gawk
+      - gcc-multilib
+      - gettext
+      - git-core
+      - libncurses5-dev
+      - libssl-dev
+      - subversion
+      - tree
+      - zlib1g-dev
+
+env:
+  global:
+    - OPENWRT_VERSION=15.05.1
+    - OPENWRT_URL=https://downloads.openwrt.org/chaos_calmer/15.05.1/brcm2708/bcm2708
+    - OPENWRT_IMG=OpenWrt-ImageBuilder-15.05.1-brcm2708-bcm2708.Linux-x86_64
+    - OPENWRT_SDK=OpenWrt-SDK-15.05.1-brcm2708-bcm2708_gcc-4.8-linaro_uClibc-0.9.33.2_eabi.Linux-x86_64
+    - OPENWRT_IMG_URL=${OPENWRT_URL}/${OPENWRT_IMG}.tar.bz2
+    - OPENWRT_SDK_URL=${OPENWRT_URL}/${OPENWRT_SDK}.tar.bz2
+    - OPENWRT_IPK="aria2 htop mjpg-streamer rsync tmux"
+
+before_script:
+  - curl -sSL ${OPENWRT_IMG_URL} | tar xj
+  - curl -sSL ${OPENWRT_SDK_URL} | tar xj
+  - ln -s ${OPENWRT_IMG} img
+  - ln -s ${OPENWRT_SDK} sdk
+
+script:
+  - cd sdk
+  - ./scripts/feeds update -a
+  - ./scripts/feeds install ${OPENWRT_IPK}
+  - sudo apt-get install asciidoc xmlto
+  - git clone https://github.com/shadowsocks/openwrt-shadowsocks.git package/shadowsocks-libev
+  - IGNORE_ERRORS=1 make -j2
+  - tree -F bin/
+  - tar czf openwrt-packages.tar.gz bin
+
+deploy:
+  provider: releases
+  api_key:
+    secure: "A3ejDnEr9EV0oQTG0L3FLKxKXQRESI71iVI0zrylSJCzjzXG6oxcsTyyU7IWr3P92b1+qw3KE/tVyioVnNw6lqJwbaCHUnc3eOp0Dotx5HPhgxGG6CEBnO2DOgao5B5hIevMcYRK21lxThewVO33nUXKmTvQm8cSkors1NHmcr33t0h8QoS6K8zEhjK4LqHWi2JVAJaBmu/YGb6B1QbyCdigkNFeNsjKI41IZey0iysUsn9FnrkqqWO6wyPiDaenMLOOI/qZBWwRyiL89rAs0v1xBFubhvUTeK00lm/6tCWaNlXsY2ZiVBHV/jccDjLFhvC7hzFtUpTzRvZojgvEJQDno8cDdhC6yeSfnd1rH5FSbHsgFCsszJr9k66IQsX0gsOGGcxcwZYAgshFGN3LT7sz1pV+WvURWcnV4PZ6kSjClva4iKan2WbNK2goidN/QfXkHQjPFXZMQ/jn+53agCYyFJeqrUEBJBo2Ba4q3fcIK8EJOz/PZ0Ub2d0PelUg8pJvCyJRf1JBmUqV1oWkRH+2/7BKV4ZnVzafQWTFSEXcZThMgQkHft9pv+/fwAlkS/NZT8cxB3Xq/fXJFH28VY38wwmmDlOx/tdXeCoIw8pgjUrIHT+qmFz33sNF+9NjvwMkJ+hhFF6zV//NCbI570Cf5iw22sKtFqSEKOUAyMQ="
+  file: openwrt-packages.tar.gz
+  skip_cleanup: true
+  on:
+    tags: true
