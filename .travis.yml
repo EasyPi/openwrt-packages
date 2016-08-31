@@ -1,11 +1,14 @@
 sudo: required
 
+dist: trusty
+
 language: generic
 
 addons:
   apt:
     packages:
       - build-essential
+      - ccache
       - flex
       - gawk
       - gcc-multilib
@@ -25,7 +28,7 @@ env:
     - OPENWRT_SDK=OpenWrt-SDK-15.05.1-brcm2708-bcm2708_gcc-4.8-linaro_uClibc-0.9.33.2_eabi.Linux-x86_64
     - OPENWRT_IMG_URL=${OPENWRT_URL}/${OPENWRT_IMG}.tar.bz2
     - OPENWRT_SDK_URL=${OPENWRT_URL}/${OPENWRT_SDK}.tar.bz2
-    - OPENWRT_IPK="aria2 htop mjpg-streamer rsync tmux"
+    - OPENWRT_IPK="aria2 htop mjpg-streamer rsync tinc tmux"
 
 before_script:
   - curl -sSL ${OPENWRT_IMG_URL} | tar xj
@@ -37,8 +40,10 @@ script:
   - cd sdk
   - ./scripts/feeds update -a
   - ./scripts/feeds install ${OPENWRT_IPK}
-  - sudo apt-get install asciidoc xmlto
   - git clone https://github.com/shadowsocks/openwrt-shadowsocks.git package/shadowsocks-libev
+  - sed -i '/DEPENDS:=/s/$/ +zlib/' package/shadowsocks-libev/Makefile
+  - ./scripts/feeds install libopenssl zlib
+  - make defconfig
   - IGNORE_ERRORS=1 make -j2
   - tree -F bin/
   - tar czf openwrt-packages.tar.gz bin

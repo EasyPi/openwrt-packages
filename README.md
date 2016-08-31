@@ -10,4 +10,5 @@ Build OpenWrt Packages for Raspberry Pi
 - [x] mjpg-streamer
 - [x] rsync
 - [x] shadowsocks-libev
+- [x] tinc
 - [x] tmux
